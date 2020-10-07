@@ -38,30 +38,32 @@ rocc - Rate-of-change check for time series
 interval specification) and ``allowed_diff`` (a floating point number).
 
 The function checks whether there exist intervals during which the value
-of the time series changes by more than the specified threshold. All
-records of that interval are flagged with the specified ``flag``
-(the default ``flag`` is ``TEMPORAL``).
+of the time series changes by more than the specified threshold. The
+offending records are flagged with the specified ``flag`` (the default
+``flag`` is ``TEMPORAL``).
 
 Here is an example time series::
 
     2020-10-06 14:30    24.0
-    2020-10-06 14:40    25.0 *
+    2020-10-06 14:40    25.0  
     2020-10-06 14:50    36.0 *
-    2020-10-06 15:01    52.0
-    2020-10-06 15:21    55.0 *
-    2020-10-06 15:31    65.0 *
+    2020-10-06 15:01    51.0
+    2020-10-06 15:21    55.0  
+    2020-10-06 15:31    65.0  
     2020-10-06 15:41    75.0 *
     2020-10-06 15:51    70.0
 
 After running ``rocc()`` with the ``thresholds`` specified in the
 example above, the records marked with a star will be flagged. The
-records ``14:40`` and ``14:50`` will be flagged because they define a
-10-minute interval in which the value increases by 11, which is more
-than 10. The three records ``15:21``-``15:41`` will be flagged because
-they define a 20-minute interval in which the value increases by 20,
-which is more than 15. The record ``15:01`` will be unflagged; although
-there's a large difference since ``14:40``, this is 21 minutes, not 20,
-so the 20-minute threshold of 15 does not apply; neither is there any
+record ``14:50`` will be flagged because in the preceding 10-minute
+interval the value increases by 11, which is more than 10. The record
+``15:41`` will be flagged because in the preceding 20-minute interval
+the value increases by 20, which is more than 15. The record ``15:01``
+will be unflagged; although there's a large difference since ``14:40``,
+this is 21 minutes, not 20, so the 20-minute threshold of 15 does not
+apply; likewise, there's a difference of 15 from ``14:50``, which does
+not exceed the 20-minute threshold of 15, and while it does exceed the
+10-minute threshold of 10, it's 11 minutes, not 10. There's also not any
 difference larger than 40 within an hour anywhere.
 
 If ``symmetric`` is ``True``, it is the absolute value of the change
