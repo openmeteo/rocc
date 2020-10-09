@@ -3,7 +3,7 @@
 import os
 import re
 
-from setuptools import find_packages, setup
+from setuptools import Extension, find_packages, setup
 
 with open("README.rst") as readme_file:
     readme = readme_file.read()
@@ -13,9 +13,51 @@ with open("HISTORY.rst") as history_file:
 
 requirements = ["pandas>=0.20,<2"]
 
-setup_requirements = []
+setup_requirements = ["cython>=0.29,<0.30"]
 
 test_requirements = []
+
+
+def use_cython():
+    base_dir = os.path.dirname(os.path.realpath(__file__))
+
+    calculation_pyx = os.path.join(base_dir, "rocc", "calculation.pyx")
+    calculation_pyx_exists = os.path.exists(calculation_pyx)
+    calculation_c = os.path.join(base_dir, "rocc", "calculation.c")
+    calculation_c_exists = os.path.exists(calculation_c)
+
+    if (not calculation_pyx_exists) and (not calculation_c_exists):
+        raise Exception(f"Neither {calculation_pyx} nor {calculation_c} exists")
+
+    return (not calculation_c_exists) or (
+        calculation_pyx_exists
+        and os.path.getmtime(calculation_pyx) > os.path.getmtime(calculation_c)
+    )
+
+
+if use_cython():
+    import numpy
+    from Cython.Build import cythonize
+
+    # The way we do the below is because of a Cython bug or maybe documentation error.
+    # See https://github.com/cython/cython/issues/1480#issuecomment-401875701
+    ext_modules = cythonize(
+        Extension(
+            "rocc.calculation",
+            sources=["rocc/calculation.pyx"],
+            include_dirs=[numpy.get_include()],
+        )
+    )
+else:
+    import numpy
+
+    ext_modules = [
+        Extension(
+            "rocc.calculation",
+            ["rocc/calculation.c"],
+            include_dirs=[numpy.get_include()],
+        ),
+    ]
 
 
 def get_version():
@@ -26,6 +68,7 @@ def get_version():
 
 
 setup(
+    ext_modules=ext_modules,
     name="rocc",
     author="Antonis Christofides",
     author_email="antonis@antonischristofides.com",
