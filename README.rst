@@ -19,10 +19,10 @@ rocc - Rate-of-change check for time series
 
 ::
 
-   from rocc import rocc
+   from rocc import Threshold, rocc
 
    rocc(
-      timeseries=a_pandas_time_series,
+      timeseries=a_htimeseries_object,
       thresholds=(
          Threshold("10min", 10),
          Threshold("20min", 15),
@@ -32,10 +32,10 @@ rocc - Rate-of-change check for time series
       flag="MYFLAG",
    )
 
-``timeseries`` is a pandas time series (dataframe) with a single column
-(besides the index). ``thresholds`` is, obviously, a list of thresholds.
-``Threshold`` is a named tuple whose items are ``delta_t`` (a pandas
-interval specification) and ``allowed_diff`` (a floating point number).
+``timeseries`` is a HTimeseries_ object.  ``thresholds`` is, obviously,
+a list of thresholds.  ``Threshold`` is a named tuple whose items are
+``delta_t`` (a pandas interval specification) and ``allowed_diff`` (a
+floating point number).
 
 The function checks whether there exist intervals during which the value
 of the time series changes by more than the specified threshold. The
@@ -71,3 +71,5 @@ that matters, not its direction. In this case, ``allowed_diff`` must be
 positive. If ``symmetric`` is ``False`` (the default), only rates larger
 than positive ``allow_diff`` or rates smaller than negative
 ``allow_diff`` are flagged.
+
+.. _HTimeseries: https://github.com/openmeteo/htimeseries/

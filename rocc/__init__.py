@@ -1,3 +1,3 @@
-from rocc.calculation import rocc  # NOQA
+from .rocc import *  # NOQA
 
 __version__ = "0.1.0.dev0"
