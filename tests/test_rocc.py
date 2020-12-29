@@ -136,3 +136,10 @@ class RoccSymmetricCase(TestCase):
                 """
             ),
         )
+
+
+class RoccEmptyCase(TestCase):
+    def test_with_empty(self):
+        ahtimeseries = HTimeseries()
+        rocc(timeseries=ahtimeseries, thresholds=[Threshold("10min", 10)])
+        self.assertTrue(ahtimeseries.data.empty)

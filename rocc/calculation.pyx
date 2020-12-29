@@ -37,10 +37,9 @@ class Rocc:
         return pd.Timedelta(delta_t).to_timedelta64()
 
     def _transform_to_plain_numpy(self):
-        max_flags_length = (
-            max(self.htimeseries.data["flags"].str.len()) + 1 + len(self.flag)
-        )
-        flags_dtype = "U" + str(max_flags_length)
+        flag_lengths = self.htimeseries.data["flags"].str.len()
+        max_flag_length = 0 if flag_lengths.empty else max(flag_lengths)
+        flags_dtype = "U" + str(max_flag_length + 1 + len(self.flag))
         self.ts_index = self.htimeseries.data.index.values.astype(long)
         self.ts_values = self.htimeseries.data["value"].values
         self.ts_flags = self.htimeseries.data["flags"].values.astype(flags_dtype)
