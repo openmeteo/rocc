@@ -1,5 +1,4 @@
 # cython: language_level=3
-
 from cpython cimport array
 import array
 
@@ -13,13 +12,14 @@ class Rocc:
         self.htimeseries = timeseries
         self.thresholds = thresholds
         self.symmetric = symmetric
-        self.flag = flag
+        self.flag = flag or ""
 
     def execute(self):
         self._transform_thresholds()
         self._transform_to_plain_numpy()
-        self._do_actual_job()
+        failures = self._do_actual_job()
         self._transform_to_pandas()
+        return failures
 
     def _transform_thresholds(self):
         threshold_deltas = array.array("l")
@@ -45,10 +45,11 @@ class Rocc:
         self.ts_flags = self.htimeseries.data["flags"].values.astype(flags_dtype)
 
     def _do_actual_job(self):
-        _perform_rocc(
+        return _perform_rocc(
             self.ts_index,
             self.ts_values,
             self.ts_flags,
+            list(self.thresholds),
             self.threshold_deltas,
             self.threshold_allowed_diffs,
             self.symmetric,
@@ -64,28 +65,40 @@ class Rocc:
         self.htimeseries.data["value"] = self.htimeseries.data["value"].astype(np.float64)
 
 
+# IMPORTANT: There's some plain Python in the Cython below. Specifically, there are some
+# Python lists and some places with undeclared variables. These are only used when a
+# failure is found. Given that failures should be very few, this should not affect the
+# overall speed. But I'm not really a Cython expert and I don't know exactly how it
+# works.
+
+
 def _perform_rocc(
     np.ndarray ts_index,
     np.ndarray ts_values,
     np.ndarray ts_flags,
+    list thresholds,
     array.array threshold_deltas,
     array.array threshold_allowed_diffs,
     int symmetric,
     str flag,
 ):
     cdef int i, record_fails_check
+    cdef list failures = []
 
     for i in range(ts_index.size):
         record_fails_check = _record_fails_check(
             i,
             ts_index,
             ts_values,
+            thresholds,
             threshold_deltas,
             threshold_allowed_diffs,
             symmetric,
+            failures,
         )
-        if record_fails_check:
+        if record_fails_check and flag:
             _add_flag(i, ts_flags, flag)
+    return failures
 
 
 def _add_flag(int i, np.ndarray ts_flags, str flag):
@@ -98,14 +111,17 @@ def _record_fails_check(
     int record_index,
     np.ndarray ts_index,
     np.ndarray ts_values,
+    list thresholds,
     array.array threshold_deltas,
     array.array threshold_allowed_diffs,
     int symmetric,
+    list failures,
 ):
     cdef int ti
+    cdef double diff
 
     for ti in range(len(threshold_deltas)):
-        record_fails_threshold = _record_fails_threshold(
+        diff = _record_fails_threshold(
             record_index,
             threshold_deltas[ti],
             threshold_allowed_diffs[ti],
@@ -113,7 +129,16 @@ def _record_fails_check(
             ts_values,
             symmetric,
         )
-        if record_fails_threshold:
+        if diff:
+            timestamp = ts_index[record_index].item()
+            datestr = str(np.datetime64(timestamp, "ns"))[:16]
+            diffsign = '+' if diff > 0 else ''
+            thresholdsign = '-' if diff < 0 else ''
+            cmpsign = '>' if diff > 0 else '<'
+            failures.append(
+                f"{datestr}  {diffsign}{diff} in {thresholds[ti].delta_t} "
+                f"({cmpsign} {thresholdsign}{threshold_allowed_diffs[ti]})"
+            )
             return True
     return False
 
@@ -128,18 +153,17 @@ def _record_fails_threshold(
 ):
     cdef double current_value = ts_values[record_index]
     cdef long current_timestamp = ts_index[record_index]
-    cdef int i
+    cdef int i, fails
+    cdef double diff;
 
     for i in range(record_index - 1, -1, -1):
         if current_timestamp - ts_index[i] > threshold_delta:
             return False
-        if _difference(current_value, ts_values[i], symmetric) > threshold_allowed_diff:
-            return True
+        diff = current_value - ts_values[i];
+        fails = (
+            diff > threshold_allowed_diff
+            or (symmetric and diff < -threshold_allowed_diff)
+        )
+        if fails:
+            return diff
     return False
-
-
-def _difference(double a, double b, int use_abs):
-    cdef double result = a - b
-    if result < 0 and use_abs:
-        result = -result
-    return result

@@ -21,7 +21,7 @@ rocc - Rate-of-change check for time series
 
    from rocc import Threshold, rocc
 
-   rocc(
+   result = rocc(
       timeseries=a_htimeseries_object,
       thresholds=(
          Threshold("10min", 10),
@@ -39,8 +39,13 @@ floating point number).
 
 The function checks whether there exist intervals during which the value
 of the time series changes by more than the specified threshold. The
-offending records are flagged with the specified ``flag`` (the default
-``flag`` is ``TEMPORAL``).
+offending records are flagged with the specified ``flag``.
+
+It returns a list of strings describing where the thresholds have been
+exceeded.
+
+If ``flag`` is ``None`` or the empty string, then the offending records
+are not flagged, and the only result is the returned value.
 
 Here is an example time series::
 
@@ -65,6 +70,14 @@ apply; likewise, there's a difference of 15 from ``14:50``, which does
 not exceed the 20-minute threshold of 15, and while it does exceed the
 10-minute threshold of 10, it's 11 minutes, not 10. There's also not any
 difference larger than 40 within an hour anywhere.
+
+The return value in this example will be a list of two strings::
+
+     "2020-10-06T14:50  +11.0 in 10min (> 10.0)"
+     "2020-10-06T15:41  +20.0 in 20min (> 15.0)"
+
+The return value should only be used for consumption by humans; it is
+subject to change.
 
 If ``symmetric`` is ``True``, it is the absolute value of the change
 that matters, not its direction. In this case, ``allowed_diff`` must be

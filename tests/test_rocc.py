@@ -24,16 +24,20 @@ class RoccTestCase(TestCase):
     def setUp(self):
         self.ahtimeseries = HTimeseries(StringIO(self.test_data))
         self.ahtimeseries.precision = 1
-        rocc(
+
+    def _run_rocc(self, flag):
+        self.return_value = rocc(
             timeseries=self.ahtimeseries,
             thresholds=(
                 Threshold("10min", 10),
                 Threshold("20min", 15),
                 Threshold("H", 40),
             ),
+            flag=flag,
         )
 
     def test_calculation(self):
+        self._run_rocc(flag="TEMPORAL")
         result = StringIO()
         self.ahtimeseries.write(result)
         result = result.getvalue().replace("\r\n", "\n")
@@ -53,13 +57,32 @@ class RoccTestCase(TestCase):
             ),
         )
 
+    def test_return_value(self):
+        self._run_rocc(flag="TEMPORAL")
+        self.assertEqual(len(self.return_value), 2)
+        self.assertEqual(
+            self.return_value[0], "2020-10-06T14:50  +11.0 in 10min (> 10.0)"
+        )
+        self.assertEqual(
+            self.return_value[1], "2020-10-06T15:41  +20.0 in 20min (> 15.0)"
+        )
+
     def test_value_dtype(self):
+        self._run_rocc(flag="TEMPORAL")
         expected_dtype = HTimeseries().data["value"].dtype
         self.assertEqual(self.ahtimeseries.data["value"].dtype, expected_dtype)
 
     def test_flags_dtype(self):
+        self._run_rocc(flag="TEMPORAL")
         expected_dtype = HTimeseries().data["flags"].dtype
         self.assertEqual(self.ahtimeseries.data["flags"].dtype, expected_dtype)
+
+    def test_empty_flag(self):
+        self._run_rocc(flag=None)
+        result = StringIO()
+        self.ahtimeseries.write(result)
+        result = result.getvalue().replace("\r\n", "\n")
+        self.assertEqual(result, self.test_data)
 
 
 class RoccSymmetricCase(TestCase):
@@ -136,6 +159,20 @@ class RoccSymmetricCase(TestCase):
                 """
             ),
         )
+
+    def test_symmetric_return_value(self):
+        return_value = rocc(
+            timeseries=self.ahtimeseries,
+            thresholds=(
+                Threshold("10min", 10),
+                Threshold("20min", 15),
+                Threshold("H", 40),
+            ),
+            symmetric=True,
+        )
+        self.assertEqual(len(return_value), 2)
+        self.assertEqual(return_value[0], "2020-10-06T14:50  -11.0 in 10min (< -10.0)")
+        self.assertEqual(return_value[1], "2020-10-06T15:41  -20.0 in 20min (< -15.0)")
 
 
 class RoccEmptyCase(TestCase):

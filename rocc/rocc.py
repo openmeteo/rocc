@@ -6,4 +6,4 @@ Threshold = namedtuple("Threshold", ["delta_t", "allowed_diff"])
 
 
 def rocc(*, timeseries, thresholds, symmetric=False, flag="TEMPORAL"):
-    Rocc(timeseries, thresholds, symmetric, flag).execute()
+    return Rocc(timeseries, thresholds, symmetric, flag).execute()
