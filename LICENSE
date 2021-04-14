@@ -1,11 +1,19 @@
 License
 =======
 
-| Copyright (C) 2020  National Technical University of Athens
+| Copyright (C) 2020-2021  National Technical University of Athens
+| Copyright (C) 2020-2021 Institute of Communications and Computer Systems
 
-Swb is free software: you can redistribute it and/or modify it under the
-terms of the GNU General Public License as published by the Free
-Software Foundation, either version 3 of the License, or (at your
+This program was funded by NTUA_ and ICCS_ as part of the OpenHi_
+project.
+
+.. _ntua: http://www.ntua.gr/
+.. _iccs: https://www.iccs.gr
+.. _openhi: https://openhi.net
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
 option) any later version.
 
 This program is distributed in the hope that it will be useful, but
