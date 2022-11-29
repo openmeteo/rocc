@@ -11,7 +11,7 @@ with open("README.rst") as readme_file:
 with open("HISTORY.rst") as history_file:
     history = history_file.read()
 
-requirements = ["pandas>=0.20,<2", "htimeseries>=3,<4"]
+requirements = ["htimeseries>=4,<5"]
 
 setup_requirements = ["cython>=0.29,<0.30"]
 
@@ -78,6 +78,10 @@ setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Natural Language :: English",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
     description="Rate-of-change check of time series",
     install_requires=requirements,

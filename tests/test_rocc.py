@@ -2,6 +2,11 @@ import textwrap
 from io import StringIO
 from unittest import TestCase
 
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
+
 from htimeseries import HTimeseries
 
 from rocc import Threshold, rocc
@@ -22,7 +27,9 @@ class RoccTestCase(TestCase):
     )
 
     def setUp(self):
-        self.ahtimeseries = HTimeseries(StringIO(self.test_data))
+        self.ahtimeseries = HTimeseries(
+            StringIO(self.test_data), default_tzinfo=ZoneInfo("Etc/GMT-2")
+        )
         self.ahtimeseries.precision = 1
 
     def _run_rocc(self, flag):
@@ -100,7 +107,9 @@ class RoccSymmetricCase(TestCase):
     )
 
     def setUp(self):
-        self.ahtimeseries = HTimeseries(StringIO(self.test_data))
+        self.ahtimeseries = HTimeseries(
+            StringIO(self.test_data), default_tzinfo=ZoneInfo("Etc/GMT-2")
+        )
         self.ahtimeseries.precision = 1
 
     def test_without_symmetric(self):

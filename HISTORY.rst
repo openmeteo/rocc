@@ -2,6 +2,11 @@
 History
 =======
 
+3.0.0 (2022-12-01)
+==================
+
+- Compatible with htimeseries 4, which uses aware timestamps.
+
 2.0.0 (2020-02-11)
 ==================
 

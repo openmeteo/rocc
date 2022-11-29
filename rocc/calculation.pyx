@@ -1,8 +1,9 @@
 # cython: language_level=3
-from cpython cimport array
-import array
+import datetime as dt
 
 cimport numpy as np
+from cpython cimport array
+
 import numpy as np
 import pandas as pd
 
@@ -26,7 +27,8 @@ class Rocc:
         threshold_allowed_diffs = array.array("d")
 
         for threshold in self.thresholds:
-            threshold_deltas.append(self._get_delta_t_transformed(threshold.delta_t))
+            delta_t = int(self._get_delta_t_transformed(threshold.delta_t))
+            threshold_deltas.append(delta_t)
             threshold_allowed_diffs.append(threshold.allowed_diff)
         self.threshold_deltas = threshold_deltas
         self.threshold_allowed_diffs = threshold_allowed_diffs
@@ -43,12 +45,18 @@ class Rocc:
         self.ts_index = self.htimeseries.data.index.values.astype(long)
         self.ts_values = self.htimeseries.data["value"].values
         self.ts_flags = self.htimeseries.data["flags"].values.astype(flags_dtype)
+        try:
+            utc_offset = self.htimeseries.data.index.tz.utcoffset(dt.datetime.now())
+        except AttributeError:
+            utc_offset = dt.timedelta(0)
+        self.ts_utc_offset_minutes = int(utc_offset.total_seconds() / 60)
 
     def _do_actual_job(self):
         return _perform_rocc(
             self.ts_index,
             self.ts_values,
             self.ts_flags,
+            self.ts_utc_offset_minutes,
             list(self.thresholds),
             self.threshold_deltas,
             self.threshold_allowed_diffs,
@@ -76,6 +84,7 @@ def _perform_rocc(
     np.ndarray ts_index,
     np.ndarray ts_values,
     np.ndarray ts_flags,
+    int ts_utc_offset_minutes,
     list thresholds,
     array.array threshold_deltas,
     array.array threshold_allowed_diffs,
@@ -90,6 +99,7 @@ def _perform_rocc(
             i,
             ts_index,
             ts_values,
+            ts_utc_offset_minutes,
             thresholds,
             threshold_deltas,
             threshold_allowed_diffs,
@@ -111,6 +121,7 @@ def _record_fails_check(
     int record_index,
     np.ndarray ts_index,
     np.ndarray ts_values,
+    int ts_utc_offset_minutes,
     list thresholds,
     array.array threshold_deltas,
     array.array threshold_allowed_diffs,
@@ -131,7 +142,9 @@ def _record_fails_check(
         )
         if diff:
             timestamp = ts_index[record_index].item()
-            datestr = str(np.datetime64(timestamp, "ns"))[:16]
+            datestr = str(
+                np.datetime64(timestamp, "ns") + np.timedelta64(ts_utc_offset_minutes, "m")
+            )[:16]
             diffsign = '+' if diff > 0 else ''
             thresholdsign = '-' if diff < 0 else ''
             cmpsign = '>' if diff > 0 else '<'
